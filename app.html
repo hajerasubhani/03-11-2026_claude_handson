@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoftMarket — Buy & Sell Software</title>
+<style>
+  :root {
+    --blue: #007AFF;
+    --blue-dark: #0062cc;
+    --blue-soft: rgba(0,122,255,.10);
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --secondary: #6e6e73;
+    --red: #ff3b30;
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(0,0,0,.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  .screen { display: none; min-height: 100vh; }
+  .screen.visible { display: block; }
+
+  /* ================= login + role screens ================= */
+  #screen-login, #screen-role {
+    display: none; min-height: 100vh;
+    align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(900px 500px at 50% -10%, #dbe9ff 0%, var(--bg) 60%);
+  }
+  #screen-login.visible, #screen-role.visible { display: flex; }
+  .auth-card {
+    background: #fff; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.10);
+    padding: 36px 32px; width: 100%; max-width: 400px; text-align: center;
+  }
+  .auth-logo {
+    width: 60px; height: 60px; border-radius: 16px; background: var(--blue); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 14px;
+  }
+  .auth-card h1 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+  .auth-card .sub { color: var(--secondary); font-size: 14px; margin: 6px 0 22px; }
+  .auth-card .field { text-align: left; margin-bottom: 12px; }
+  .auth-card label { display: block; font-size: 12px; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+  .auth-card input {
+    width: 100%; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 14px;
+    font-size: 15px; font-family: inherit; outline: none; transition: border .15s;
+  }
+  .auth-card input:focus { border-color: var(--blue); }
+  .auth-btn {
+    width: 100%; border: none; background: var(--blue); color: #fff; font-size: 16px; font-weight: 700;
+    padding: 14px; border-radius: 14px; cursor: pointer; margin-top: 8px; transition: background .15s;
+  }
+  .auth-btn:hover { background: var(--blue-dark); }
+  .auth-note { font-size: 12px; color: var(--secondary); margin-top: 14px; }
+
+  .role-cards { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
+  .role-card {
+    display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
+    border: 2px solid #e5e5ea; background: #fff; border-radius: 18px; padding: 18px;
+    cursor: pointer; transition: all .15s; font-family: inherit;
+  }
+  .role-card:hover { border-color: var(--blue); box-shadow: 0 8px 24px rgba(0,122,255,.15); }
+  .role-card .ic {
+    width: 54px; height: 54px; border-radius: 50%; background: var(--blue-soft);
+    display: flex; align-items: center; justify-content: center; font-size: 26px; flex: none;
+  }
+  .role-card .t { font-size: 17px; font-weight: 700; }
+  .role-card .s { font-size: 13px; color: var(--secondary); margin-top: 2px; }
+  .role-card .chev { margin-left: auto; color: #c7c7cc; font-size: 20px; }
+  .welcome { font-size: 15px; color: var(--secondary); margin-bottom: 4px; }
+
+  /* ================= header (app) ================= */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0,0,0,.06);
+  }
+  .header-inner { max-width: 1100px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .logo { font-size: 19px; font-weight: 800; letter-spacing: -.02em; display: flex; align-items: center; gap: 8px; }
+  .logo .mark { width: 32px; height: 32px; border-radius: 9px; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .role-switch { display: flex; background: rgba(118,118,128,.12); border-radius: 999px; padding: 3px; }
+  .role-switch button {
+    border: none; background: transparent; padding: 6px 16px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; cursor: pointer; color: var(--secondary); transition: all .2s;
+  }
+  .role-switch button.active { background: #fff; color: var(--text); box-shadow: 0 1px 6px rgba(0,0,0,.12); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .conn { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 999px; background: #fff1f0; color: var(--red); white-space: nowrap; }
+  .conn.live { background: #eafbef; color: #1d9e43; }
+  .user-chip { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--blue); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+  }
+  .signout { border: none; background: rgba(118,118,128,.12); color: var(--secondary); font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+
+  /* ================= hero / toolbar ================= */
+  .hero { max-width: 1100px; margin: 0 auto; padding: 30px 24px 4px; }
+  .hero h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; }
+  .hero p { color: var(--secondary); margin-top: 6px; font-size: 15px; }
+  .hero .accent { color: var(--blue); }
+  .toolbar { max-width: 1100px; margin: 20px auto 0; padding: 0 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .searchbox { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 11px 14px; }
+  .searchbox input { border: none; outline: none; width: 100%; font-size: 15px; font-family: inherit; background: transparent; }
+  .btn-primary {
+    border: none; background: var(--blue); color: #fff; font-size: 15px; font-weight: 600;
+    padding: 12px 20px; border-radius: 12px; cursor: pointer; display: none; align-items: center; gap: 8px;
+  }
+  .btn-primary.visible { display: inline-flex; }
+  .chips { max-width: 1100px; margin: 14px auto 0; padding: 0 24px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid #e5e5ea; font-size: 13px; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+    background: #fff; color: var(--secondary); transition: all .15s;
+  }
+  .chip.active { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
+
+  /* ================= grid ================= */
+  .grid-wrap { max-width: 1100px; margin: 24px auto 60px; padding: 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+  .card {
+    background: var(--card); border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow); cursor: pointer; transition: transform .15s, box-shadow .15s;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+  .card .icon { height: 130px; display: flex; align-items: center; justify-content: center; font-size: 54px; background: linear-gradient(135deg, rgba(0,122,255,.12), rgba(0,122,255,.05)); }
+  .card .body { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 3px; }
+  .card .cat { font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: .06em; }
+  .card .name { font-size: 15px; font-weight: 700; }
+  .card .dev { font-size: 13px; color: var(--secondary); }
+  .card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .card .price { font-size: 16px; font-weight: 800; color: var(--blue); }
+  .card.soldout { opacity: .5; }
+  .card .badge { font-size: 10px; font-weight: 700; color: var(--red); background: #fff1f0; padding: 4px 9px; border-radius: 999px; }
+  .seller-actions { display: flex; gap: 8px; padding: 0 15px 14px; }
+  .seller-actions button {
+    flex: 1; border: 1px solid #e5e5ea; background: #fff; border-radius: 10px; padding: 8px;
+    font-size: 12px; font-weight: 600; cursor: pointer; color: var(--secondary); font-family: inherit;
+  }
+  .seller-actions button:hover { border-color: var(--blue); color: var(--blue); }
+  .seller-actions button.danger:hover { border-color: var(--red); color: var(--red); }
+  .empty { text-align: center; color: var(--secondary); padding: 70px 20px; grid-column: 1/-1; }
+  .empty .big { font-size: 42px; margin-bottom: 10px; }
+
+  /* ================= modals ================= */
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: 16px;
+  }
+  .backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 22px; max-width: 460px; width: 100%;
+    max-height: 88vh; overflow-y: auto; padding: 26px; position: relative; animation: pop .18s ease;
+  }
+  @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal .close {
+    position: absolute; top: 12px; right: 12px; border: none; background: rgba(118,118,128,.12);
+    width: 30px; height: 30px; border-radius: 50%; font-size: 14px; cursor: pointer; color: var(--secondary);
+  }
+  .m-icon { height: 130px; border-radius: 18px; font-size: 60px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(0,122,255,.14), rgba(0,122,255,.05)); margin-bottom: 16px; }
+  .m-cat { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: .06em; }
+  .m-name { font-size: 23px; font-weight: 800; margin-top: 3px; }
+  .m-dev { font-size: 14px; color: var(--secondary); margin: 5px 0 12px; }
+  .m-price { font-size: 25px; font-weight: 800; color: var(--blue); margin-bottom: 12px; }
+  .m-desc { font-size: 15px; line-height: 1.6; color: #3a3a3c; }
+  .m-buy { width: 100%; margin-top: 18px; border: none; background: var(--blue); color: #fff; font-size: 16px; font-weight: 700; padding: 14px; border-radius: 14px; cursor: pointer; }
+  .m-buy:disabled { opacity: .4; cursor: default; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+  .field input, .field select, .field textarea {
+    width: 100%; border: 1px solid #e5e5ea; border-radius: 12px; padding: 11px;
+    font-size: 15px; font-family: inherit; outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
+  .field textarea { resize: none; }
+  .emoji-pick { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .emoji-pick button { font-size: 22px; padding: 9px 0; border: 1px solid #e5e5ea; background: #fff; border-radius: 12px; cursor: pointer; }
+  .emoji-pick button.sel { border-color: var(--blue); background: var(--blue-soft); }
+  .m-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .m-actions button { flex: 1; padding: 13px; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; }
+  .btn-cancel { background: rgba(118,118,128,.12); color: var(--secondary); }
+  .btn-post { background: var(--blue); color: #fff; }
+
+  /* ================= toast / footer ================= */
+  .toast {
+    position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(16px);
+    background: rgba(28,28,30,.92); color: #fff; font-size: 14px; font-weight: 500;
+    padding: 12px 20px; border-radius: 999px; opacity: 0; transition: all .25s; z-index: 300;
+    pointer-events: none; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  footer { text-align: center; color: var(--secondary); font-size: 12px; padding: 26px 20px 36px; }
+
+  /* ================= MOBILE VIEW ================= */
+  @media (max-width: 640px) {
+    .header-inner { padding: 10px 14px; gap: 8px; }
+    .logo { font-size: 16px; }
+    .logo .mark { width: 28px; height: 28px; font-size: 14px; }
+    .role-switch button { padding: 5px 12px; font-size: 12px; }
+    .conn { display: none; }
+    .signout { padding: 5px 10px; font-size: 11px; }
+    .hero { padding: 20px 16px 2px; }
+    .hero h1 { font-size: 24px; }
+    .hero p { font-size: 13px; }
+    .toolbar { padding: 0 16px; }
+    .toolbar .searchbox { min-width: 100%; }
+    .btn-primary { width: 100%; justify-content: center; }
+    .chips { padding: 0 16px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { flex: none; }
+    .grid-wrap { padding: 0 16px; margin-bottom: 44px; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .card .icon { height: 96px; font-size: 40px; }
+    .card .name { font-size: 13px; }
+    .card .dev { font-size: 11px; }
+    .card .price { font-size: 14px; }
+    .card .foot { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .auth-card { padding: 26px 20px; }
+    .modal { padding: 20px; border-radius: 18px; }
+    .m-name { font-size: 19px; }
+    .m-price { font-size: 21px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SCREEN 1: LOGIN ============ -->
+<div class="screen visible" id="screen-login">
+  <div class="auth-card">
+    <div class="auth-logo">⬡</div>
+    <h1>SoftMarket</h1>
+    <div class="sub">Buy &amp; sell software — sign in to continue</div>
+    <div class="field"><label>Your name</label><input id="l-name" type="text" placeholder="e.g. Hajera" onkeydown="if(event.key==='Enter')signIn()"></div>
+    <div class="field"><label>Email</label><input id="l-email" type="email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')signIn()"></div>
+    <div class="field"><label>Password</label><input id="l-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')signIn()"></div>
+    <button class="auth-btn" onclick="signIn()">Sign in</button>
+    <div class="auth-note">MVP demo — any name/email/password works</div>
+  </div>
+</div>
+
+<!-- ============ SCREEN 2: ROLE SELECT ============ -->
+<div class="screen" id="screen-role">
+  <div class="auth-card">
+    <div class="auth-logo">⬡</div>
+    <div class="welcome">Welcome, <b id="r-user"></b> 👋</div>
+    <h1>Who are you today?</h1>
+    <div class="role-cards">
+      <button class="role-card" onclick="pickRole('buyer')">
+        <div class="ic">🛍️</div>
+        <div><div class="t">Buyer</div><div class="s">Browse and buy software</div></div>
+        <div class="chev">›</div>
+      </button>
+      <button class="role-card" onclick="pickRole('seller')">
+        <div class="ic">🏷️</div>
+        <div><div class="t">Seller</div><div class="s">Post and manage your apps</div></div>
+        <div class="chev">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN 3: APP ============ -->
+<div class="screen" id="screen-app">
+  <header>
+    <div class="header-inner">
+      <div class="logo"><div class="mark">⬡</div> SoftMarket</div>
+      <div class="role-switch">
+        <button id="role-buyer" class="active" onclick="setRole('buyer')">🛍️ Buyer</button>
+        <button id="role-seller" onclick="setRole('seller')">🏷️ Seller</button>
+      </div>
+      <div class="header-right">
+        <div class="conn" id="conn">🟡 Offline</div>
+        <div class="user-chip"><div class="avatar" id="avatar"></div><span id="who"></span></div>
+        <button class="signout" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1 id="hero-title">Discover <span class="accent">software</span> worth buying</h1>
+    <p id="hero-sub">Apps, tools and games posted by developers — browse, compare and get in touch.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="searchbox">🔍 <input id="search" type="text" placeholder="Search software, developers…" oninput="render()"></div>
+    <button class="btn-primary" id="add-btn" onclick="openAdd()">＋ Post an app</button>
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+  <footer>SoftMarket MVP demo · the iOS SwiftUI app shares this same backend</footer>
+</div>
+
+<!-- detail modal -->
+<div class="backdrop" id="detail-backdrop" onclick="if(event.target===this)closeDetail()">
+  <div class="modal">
+    <button class="close" onclick="closeDetail()">✕</button>
+    <div class="m-icon" id="d-icon"></div>
+    <div class="m-cat" id="d-cat"></div>
+    <div class="m-name" id="d-name"></div>
+    <div class="m-dev" id="d-dev"></div>
+    <div class="m-price" id="d-price"></div>
+    <div class="m-desc" id="d-desc"></div>
+    <button class="m-buy" id="d-buy" onclick="contactSeller()">Contact Developer</button>
+  </div>
+</div>
+
+<!-- add modal -->
+<div class="backdrop" id="add-backdrop" onclick="if(event.target===this)closeAdd()">
+  <div class="modal">
+    <button class="close" onclick="closeAdd()">✕</button>
+    <div class="m-name" style="font-size:20px;margin-bottom:16px;">Post a new app</div>
+    <div class="field"><label>App name</label><input id="f-name" placeholder="e.g. PhotoStudio Pro"></div>
+    <div class="field"><label>Description</label><textarea id="f-desc" rows="3" placeholder="What does your app do?"></textarea></div>
+    <div class="field"><label>Price (USD)</label><input id="f-price" type="number" min="0.01" step="0.01" placeholder="9.99"></div>
+    <div class="field"><label>Category</label><select id="f-cat"></select></div>
+    <div class="field"><label>Icon (placeholder)</label><div class="emoji-pick" id="emoji-pick"></div></div>
+    <div class="m-actions">
+      <button class="btn-cancel" onclick="closeAdd()">Cancel</button>
+      <button class="btn-post" onclick="postApp()">Post app</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ================= config =================
+  // If this page is ever served over http from the PC (e.g. opened on a
+  // phone), the API host follows the page's host; otherwise localhost.
+  const API = location.hostname
+    ? "http://" + location.hostname + ":3000/api"
+    : "http://localhost:3000/api";
+
+  const CATEGORIES = ["iOS Apps", "Android Apps", "Web Apps", "Games", "Productivity", "Design", "Other"];
+  const EMOJIS = ["📱","💻","🎮","🧩","📝","🎨","📊","📷","🎵","🤖","🗂️","⚙️"];
+
+  // ================= state =================
+  let user = null;
+  let products = [];
+  let live = false;
+  let role = "buyer";
+  let filter = "All";
+  let pickedEmoji = "📱";
+  let selectedId = null;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const money = n => "$" + Number(n).toFixed(2);
+
+  function showScreen(name) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("visible"));
+    $(name).classList.add("visible");
+  }
+
+  // ================= login / roles =================
+  function signIn() {
+    const name = $("l-name").value.trim();
+    const email = $("l-email").value.trim();
+    const pass = $("l-pass").value;
+    if (!name) { toast("Please enter your name ⚠️"); return; }
+    if (!email || !email.includes("@")) { toast("Please enter a valid email ⚠️"); return; }
+    if (!pass) { toast("Please enter a password ⚠️"); return; }
+
+    user = { name, email };
+    localStorage.setItem("softmarket.user", JSON.stringify(user));
+    enterRoleScreen();
+  }
+
+  function enterRoleScreen() {
+    $("r-user").textContent = user.name;
+    showScreen("screen-role");
+  }
+
+  function pickRole(r) {
+    role = r;
+    showScreen("screen-app");
+    applyRole();
+    load();
+  }
+
+  function signOut() {
+    user = null;
+    localStorage.removeItem("softmarket.user");
+    $("l-name").value = ""; $("l-email").value = ""; $("l-pass").value = "";
+    showScreen("screen-login");
+  }
+
+  function setRole(r) {
+    role = r;
+    applyRole();
+    render();
+  }
+
+  function applyRole() {
+    $("role-buyer").classList.toggle("active", role === "buyer");
+    $("role-seller").classList.toggle("active", role === "seller");
+    $("add-btn").classList.toggle("visible", role === "seller");
+    $("hero-title").innerHTML = role === "buyer"
+      ? 'Discover <span class="accent">software</span> worth buying'
+      : 'Sell your <span class="accent">software</span> to the world';
+    $("hero-sub").textContent = role === "buyer"
+      ? "Apps, tools and games posted by developers — browse, compare and get in touch."
+      : "Post your apps, manage your listings and reach buyers instantly.";
+    $("avatar").textContent = user.name.trim().charAt(0).toUpperCase();
+    $("who").textContent = user.name;
+  }
+
+  // ================= data layer =================
+  // Tries the real backend first; falls back to localStorage so the demo
+  // still works before Node.js is running.
+  async function apiGet(path) {
+    const res = await fetch(API + path);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }
+  async function apiSend(method, path, body) {
+    const res = await fetch(API + path, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.status === 204 ? null : res.json();
+  }
+  function loadLocal() {
+    try { return JSON.parse(localStorage.getItem("softmarket.products")) || null; }
+    catch { return null; }
+  }
+  function saveLocal() {
+    localStorage.setItem("softmarket.products", JSON.stringify(products));
+  }
+  function seed() {
+    return [
+      { name: "FitTrack Pro", description: "iOS fitness tracking app with workout plans, step tracking and health sync.", price: 4.99, category: "iOS Apps", emoji: "📱", sellerName: "Alex" },
+      { name: "TaskFlow", description: "Web-based task management tool for teams with kanban boards and reports.", price: 9.99, category: "Web Apps", emoji: "💻", sellerName: "Maria" },
+      { name: "Puzzle Quest HD", description: "Addictive puzzle game for mobile with 200 levels and daily challenges.", price: 2.99, category: "Games", emoji: "🎮", sellerName: "Sam" },
+      { name: "PaletteKit", description: "Design tool with 500+ icon pack and color palette generator for developers.", price: 14.99, category: "Design", emoji: "🎨", sellerName: "Alex" },
+      { name: "NoteMaster", description: "Cross-platform notes app with cloud sync, tags and markdown support.", price: 6.99, category: "Productivity", emoji: "📝", sellerName: "Maria" },
+    ].map((p, i) => ({ ...p, id: i + 1, isAvailable: true }));
+  }
+
+  async function load() {
+    try {
+      products = await apiGet("/products");
+      live = true;
+    } catch {
+      live = false;
+      products = loadLocal() || seed();
+    }
+    setConn(); render();
+  }
+
+  async function add(product) {
+    if (live) {
+      try { const created = await apiSend("POST", "/products", product); products.unshift(created); }
+      catch { products.unshift({ ...product, id: nextId() }); }
+    } else {
+      products.unshift({ ...product, id: nextId() });
+    }
+    saveLocal(); render();
+  }
+
+  async function remove(product) {
+    if (live) { try { await apiSend("DELETE", "/products/" + product.id); } catch {} }
+    products = products.filter(p => p.id !== product.id);
+    saveLocal(); render();
+  }
+
+  async function toggle(product) {
+    const newValue = !product.isAvailable;
+    if (live) {
+      try { await apiSend("PATCH", "/products/" + product.id + "/availability", { isAvailable: newValue }); } catch {}
+    }
+    product.isAvailable = newValue;
+    saveLocal(); render();
+  }
+
+  function nextId() { return products.reduce((m, p) => Math.max(m, p.id), 0) + 1; }
+
+  function setConn() {
+    const el = $("conn");
+    el.textContent = live ? "🟢 Live — PostgreSQL" : "🟡 Offline — local data";
+    el.classList.toggle("live", live);
+  }
+
+  // ================= ui =================
+  function visible() {
+    const q = $("search").value.trim().toLowerCase();
+    return products.filter(p =>
+      p.isAvailable &&
+      (filter === "All" || p.category === filter) &&
+      (q === "" || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
+    );
+  }
+
+  function render() {
+    $("chips").innerHTML = ["All", ...CATEGORIES].map(c =>
+      `<button class="chip ${filter === c ? "active" : ""}" onclick="setFilter('${esc(c)}')">${esc(c)}</button>`
+    ).join("");
+
+    if (role === "buyer") {
+      const list = visible();
+      $("grid").innerHTML = list.length === 0
+        ? `<div class="empty"><div class="big">🔍</div>No apps match your search.</div>`
+        : list.map(p => productCard(p, false)).join("");
+    } else {
+      const mine = products.filter(p => p.sellerName === user.name);
+      const others = seedIfMineEmpty(mine);
+      $("grid").innerHTML = mine.length === 0
+        ? `<div class="empty"><div class="big">📦</div>You haven't posted anything yet — tap "Post an app".</div>`
+        : mine.map(p => productCard(p, true)).join("");
+    }
+  }
+
+  // In seller mode, if the user has no listings yet, show the sample apps
+  // read-only so the screen doesn't look broken during the demo.
+  let seededShown = false;
+  function seedIfMineEmpty(mine) {
+    if (mine.length > 0) return mine;
+    return products.filter(p => p.sellerName !== user.name).map(p => ({ ...p, others: true }));
+  }
+
+  function productCard(p, isMine) {
+    const tools = isMine ? `
+      <div class="seller-actions">
+        <button onclick="event.stopPropagation();toggle(products.find(x=>x.id===${p.id}))">${p.isAvailable ? "👁 On sale" : "🚫 Off sale"}</button>
+        <button class="danger" onclick="event.stopPropagation();remove(products.find(x=>x.id===${p.id}))">🗑 Delete</button>
+      </div>` : "";
+    return `
+      <div class="card ${p.isAvailable ? "" : "soldout"}" onclick="openDetail(${p.id})">
+        <div class="icon">${p.emoji}</div>
+        <div class="body">
+          <div class="cat">${esc(p.category)}</div>
+          <div class="name">${esc(p.name)}</div>
+          <div class="dev">by ${esc(p.sellerName)}</div>
+          <div class="foot">
+            <div class="price">${money(p.price)}</div>
+            ${p.isAvailable ? "" : '<div class="badge">OFF SALE</div>'}
+          </div>
+        </div>
+        ${tools}
+      </div>`;
+  }
+
+  function setFilter(c) { filter = c; render(); }
+
+  // detail modal
+  function openDetail(id) {
+    selectedId = id;
+    const p = products.find(x => x.id === id);
+    $("d-icon").textContent = p.emoji;
+    $("d-cat").textContent = p.category;
+    $("d-name").textContent = p.name;
+    $("d-dev").textContent = "👤 by " + p.sellerName;
+    $("d-price").textContent = money(p.price);
+    $("d-desc").textContent = p.description;
+    $("d-buy").disabled = !p.isAvailable;
+    $("d-buy").textContent = p.isAvailable ? "Contact Developer" : "No longer available";
+    $("detail-backdrop").classList.add("open");
+  }
+  function closeDetail() { $("detail-backdrop").classList.remove("open"); }
+  function contactSeller() {
+    const p = products.find(x => x.id === selectedId);
+    toast("In the full app this opens a chat with " + p.sellerName + " 📩");
+  }
+
+  // add modal
+  function openAdd() {
+    $("f-cat").innerHTML = CATEGORIES.map(c => `<option>${esc(c)}</option>`).join("");
+    renderEmojiPick();
+    $("add-backdrop").classList.add("open");
+  }
+  function closeAdd() { $("add-backdrop").classList.remove("open"); }
+  function renderEmojiPick() {
+    $("emoji-pick").innerHTML = EMOJIS.map(e =>
+      `<button class="${e === pickedEmoji ? "sel" : ""}" onclick="pickedEmoji='${e}';renderEmojiPick()">${e}</button>`
+    ).join("");
+  }
+  async function postApp() {
+    const name = $("f-name").value.trim();
+    const priceVal = parseFloat($("f-price").value);
+    if (!name) { toast("Please enter an app name ⚠️"); return; }
+    if (!priceVal || priceVal <= 0) { toast("Please enter a valid price ⚠️"); return; }
+
+    await add({
+      name,
+      description: $("f-desc").value.trim() || "No description provided.",
+      price: priceVal,
+      category: $("f-cat").value,
+      emoji: pickedEmoji,
+      sellerName: user.name,
+      isAvailable: true,
+    });
+    $("f-name").value = ""; $("f-desc").value = ""; $("f-price").value = "";
+    closeAdd();
+    toast(`"${name}" is live! 🎉`);
+  }
+
+  // toast
+  let toastTimer;
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2400);
+  }
+
+  // ================= boot =================
+  // Restore a saved session if there is one; otherwise start at login.
+  try { user = JSON.parse(localStorage.getItem("softmarket.user")); } catch {}
+  if (user && user.name) {
+    enterRoleScreen();
+  } else {
+    showScreen("screen-login");
+  }
+</script>
+</body>
+</html>
